@@ -4,7 +4,7 @@
 use crate::{
     color::Color,
     math::{vec2, Rect, RectOffset, Vec2},
-    text::{atlas::Atlas, FontInternal, TextDimensions},
+    text::{atlas2::Atlas, FontInternal, TextDimensions},
     texture::Texture2D,
     ui::{style::Style, UiContent},
 };

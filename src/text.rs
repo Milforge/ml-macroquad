@@ -16,6 +16,7 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 pub(crate) mod atlas;
+pub(crate) mod atlas2;
 
 use atlas::Atlas;
 
@@ -29,7 +30,7 @@ pub(crate) struct CharacterInfo {
 
 pub(crate) struct FontInternal {
     font: fontdue::Font,
-    atlas: Rc<RefCell<Atlas>>,
+    atlas: Rc<RefCell<atlas2::Atlas>>,
     characters: HashMap<(char, u16), CharacterInfo>,
 }
 
@@ -60,7 +61,7 @@ impl std::error::Error for FontError {}
 
 impl FontInternal {
     pub(crate) fn load_from_bytes(
-        atlas: Rc<RefCell<Atlas>>,
+        atlas: Rc<RefCell<atlas2::Atlas>>,
         bytes: &[u8],
     ) -> Result<FontInternal, FontError> {
         Ok(FontInternal {
@@ -96,6 +97,7 @@ impl FontInternal {
 
         let sprite = self.atlas.borrow_mut().new_unique_id();
         self.atlas.borrow_mut().cache_sprite(
+            get_quad_context(),
             sprite,
             Image {
                 bytes: bitmap
@@ -256,7 +258,7 @@ pub async fn load_ttf_font(path: &str) -> Result<Font, FontError> {
 /// ```
 pub fn load_ttf_font_from_bytes(bytes: &[u8]) -> Result<Font, FontError> {
     let context = get_context();
-    let atlas = Rc::new(RefCell::new(Atlas::new(
+    let atlas = Rc::new(RefCell::new(atlas2::Atlas::new(
         get_quad_context(),
         miniquad::FilterMode::Linear,
     )));
@@ -327,8 +329,14 @@ pub fn draw_text_ex(text: &str, x: f32, y: f32, params: TextParams) {
             glyph.h as f32,
         );
 
+        let texo = atlas.texture(get_quad_context(), font_data.sprite);
+
+        if texo.is_none() {
+            continue;
+        }
+
         crate::texture::draw_texture_ex(
-            atlas.texture(),
+            texo.unwrap(),
             dest.x,
             dest.y,
             params.color,
@@ -391,7 +399,7 @@ pub(crate) struct FontsStorage {
 
 impl FontsStorage {
     pub(crate) fn new(ctx: &mut miniquad::Context) -> FontsStorage {
-        let atlas = Rc::new(RefCell::new(Atlas::new(ctx, miniquad::FilterMode::Linear)));
+        let atlas = Rc::new(RefCell::new(atlas2::Atlas::new(ctx, miniquad::FilterMode::Linear)));
 
         let default_font =
             FontInternal::load_from_bytes(atlas, include_bytes!("ProggyClean.ttf")).unwrap();

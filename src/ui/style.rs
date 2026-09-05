@@ -1,7 +1,7 @@
 use crate::{
     color::Color,
     math::RectOffset,
-    text::{atlas::Atlas, FontError, FontInternal},
+    text::{atlas2::Atlas, FontError, FontInternal},
     texture::Image,
     ui::ElementState,
 };
@@ -173,32 +173,12 @@ impl StyleBuilder {
     }
 
     pub fn build(self) -> Style {
-        let mut atlas = self.atlas.borrow_mut();
-
-        let background = self.background.map(|image| {
-            let id = atlas.new_unique_id();
-            atlas.cache_sprite(id, image);
-            id
-        });
-
-        let background_hovered = self.background_hovered.map(|image| {
-            let id = atlas.new_unique_id();
-            atlas.cache_sprite(id, image);
-            id
-        });
-
-        let background_clicked = self.background_clicked.map(|image| {
-            let id = atlas.new_unique_id();
-            atlas.cache_sprite(id, image);
-            id
-        });
-
         Style {
             background_margin: self.background_margin,
             margin: self.margin,
-            background,
-            background_hovered,
-            background_clicked,
+            background: None,
+            background_hovered: None,
+            background_clicked: None,
             color: self.color,
             color_hovered: self.color_hovered,
             color_clicked: self.color_clicked,

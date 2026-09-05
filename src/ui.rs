@@ -61,9 +61,10 @@ pub fn camera_ui() -> impl DerefMut<Target = Ui> {
 
 use crate::{
     math::{Rect, RectOffset, Vec2},
-    text::{atlas::Atlas, FontInternal},
+    text::{atlas2::Atlas, FontInternal},
     texture::Image,
     ui::{canvas::DrawCanvas, render::Painter},
+    get_quad_context
 };
 
 use std::{cell::RefCell, collections::HashMap, rc::Rc};
@@ -648,12 +649,12 @@ impl Ui {
         .unwrap();
 
         for character in crate::text::Font::ascii_character_list() {
-            font.cache_glyph(character, 13);
+            // font.cache_glyph(character, 13);
         }
 
-        atlas
-            .borrow_mut()
-            .cache_sprite(0, Image::gen_image_color(1, 1, crate::WHITE));
+        // atlas
+            // .borrow_mut()
+            // .cache_sprite(get_quad_context(), 0, Image::gen_image_color(1, 1, crate::WHITE));
 
         let font = Rc::new(RefCell::new(font));
         Ui {
@@ -812,50 +813,7 @@ impl Ui {
     }
 
     pub(crate) fn begin_modal(&mut self, id: Id, position: Vec2, size: Vec2) -> WindowContext {
-        self.input.window_active = true;
-        self.in_modal = true;
-
-        let atlas = self.atlas.clone();
-
-        let window = self.modal.get_or_insert_with(|| {
-            Window::new(
-                id,
-                None,
-                position,
-                size,
-                0.0,
-                RectOffset::new(0.0, 0.0, 0.0, 0.0),
-                0.0,
-                false,
-                true,
-                atlas,
-            )
-        });
-
-        window.parent = self.active_window;
-        window.size = size;
-        window.want_close = false;
-        window.active = true;
-        window.painter.clipping_zone = Some(Rect::new(position.x, position.y, size.x, size.y));
-        window.set_position(position);
-
-        WindowContext {
-            focused: true,
-            window,
-            input: &mut self.input,
-            style: self.skin_stack.top(),
-            dragging: &mut self.dragging,
-            drag_hovered: &mut self.drag_hovered,
-            drag_hovered_previous_frame: &mut self.drag_hovered_previous_frame,
-            storage_u32: &mut self.storage_u32,
-            storage_any: &mut self.storage_any,
-            clipboard_selection: &mut self.clipboard_selection,
-            clipboard: &mut *self.clipboard,
-            last_item_clicked: &mut self.last_item_clicked,
-            last_item_hovered: &mut self.last_item_hovered,
-            tab_selector: &mut self.tab_selector,
-            input_focus: &mut self.input_focus,
-        }
+        unimplemented!()
     }
 
     pub(crate) fn end_modal(&mut self) {
@@ -1268,63 +1226,7 @@ pub(crate) mod ui_context {
         }
 
         pub(crate) fn draw(&mut self, _ctx: &mut miniquad::Context, quad_gl: &mut QuadGl) {
-            // TODO: this belongs to new and waits for cleaning up context initialization mess
-            let material = self.material.get_or_insert_with(|| {
-                let fragment_shader = FRAGMENT_SHADER.to_string();
-                let vertex_shader = VERTEX_SHADER.to_string();
 
-                load_material(
-                    &vertex_shader,
-                    &fragment_shader,
-                    MaterialParams {
-                        pipeline_params: PipelineParams {
-                            color_blend: Some(BlendState::new(
-                                Equation::Add,
-                                BlendFactor::Value(BlendValue::SourceAlpha),
-                                BlendFactor::OneMinusValue(BlendValue::SourceAlpha),
-                            )),
-                            ..Default::default()
-                        },
-                        ..Default::default()
-                    },
-                )
-                .unwrap()
-            });
-
-            let mut ui = self.ui.borrow_mut();
-            self.ui_draw_list.clear();
-            ui.render(&mut self.ui_draw_list);
-            let mut ui_draw_list = vec![];
-
-            std::mem::swap(&mut ui_draw_list, &mut self.ui_draw_list);
-
-            let font_texture: Texture2D = ui.atlas.borrow_mut().texture();
-            quad_gl.texture(Some(font_texture));
-
-            gl_use_material(*material);
-
-            for draw_command in &ui_draw_list {
-                if let Some(texture) = draw_command.texture {
-                    quad_gl.texture(Some(texture));
-                } else {
-                    quad_gl.texture(Some(font_texture));
-                }
-
-                quad_gl.scissor(
-                    draw_command
-                        .clipping_zone
-                        .map(|rect| (rect.x as i32, rect.y as i32, rect.w as i32, rect.h as i32)),
-                );
-                quad_gl.draw_mode(DrawMode::Triangles);
-                quad_gl.geometry(&draw_command.vertices, &draw_command.indices);
-            }
-            quad_gl.texture(None);
-
-            gl_use_default_material();
-
-            std::mem::swap(&mut ui_draw_list, &mut self.ui_draw_list);
-
-            ui.new_frame(get_frame_time());
         }
     }
 
